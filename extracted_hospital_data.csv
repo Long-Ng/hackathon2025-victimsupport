@@ -1,0 +1,41 @@
+name,address,latitude,longitude,website
+Vancouver General Hospital.,"920 West 10th Ave, Vancouver, BC, V5Z 1M9",49.262407,-123.124461,https://www.vch.ca/en/location-service/emergency-department-vancouver-general-hospital
+BC Children's Hospital,"4480 Oak St., Entrance 55, Vancouver, BC V6H 3V4",49.245417,-123.123578,https://www.bcchildrens.ca/clinics-services/emergency-department
+Richmond Hospital,"7000 Westminster Highway, Richmond, BC, V6X 1A2",49.168873,-123.146325,https://www.vch.ca/en/location-service/emergency-department-richmond-hospital
+St. Paul's Hospital,"1081 Burrard St, Vancouver, BC, V6Z 1Y6",49.280596,-123.129001,https://www.providencehealthcare.org/hospitals-residences/st-paul's-hospital
+Lions Gate Hospital,"231 East 15th St, North Vancouver, BC, V7L 2L7",49.321096,-123.067796,https://www.vch.ca/en/location-service/emergency-department-lions-gate-hospital
+Mount Saint Joseph Hospital,"3080 Prince Edward St, Vancouver, BC, V5T 3N4",49.257914,-123.095204,https://www.providencehealthcare.org/hospitals-residences/mount-saint-joseph-hospital
+UBC Hospital,"2211 Wesbrook Mall, Vancouver, BC, V6T 2B5",49.264067,-123.245344,https://www.vch.ca/en/location-service/emergency-department-ubc-hospital
+REACH Urgent and Primary Care Centre,"1145 Commercial Drive, Vancouver, BC, V5L 3X3",49.274416,-123.069684,https://www.reachcentre.bc.ca/upcc
+Northeast Urgent and Primary Care Centre,"102-2788 E. Hastings St., Vancouver, BC V5K 1Z9",49.281145,-123.047057,https://www.vch.ca/en/location/northeast-urgent-and-primary-care-centre-upcc
+Squamish General Hospital,"38140 Behrner Drive, Squamish, BC, V8B 0J3",49.698583,-123.140628,https://www.vch.ca/en/location-service/emergency-department-squamish-general-hospital
+Whistler Health Care Centre,"4380 Lorimer Road, Whistler, BC, V0N 18B",50.11982,-122.955186,https://www.vch.ca/en/location/whistler-health-care-centre
+Pemberton Health Centre,"1403 Portage Road, Pemberton, BC, V0N 2L0",50.321081,-122.804414,https://www.vch.ca/en/location/pemberton-health-centre
+Southeast Urgent and Primary Care Centre,"5880 Victoria Drive, Vancouver, BC V5P 3W9",49.230575,-123.06518,https://www.vch.ca/en/location/southeast-urgent-and-primary-care-centre
+Burnaby Hospital,"3935 Kincaid Street, Burnaby, BC, V5G 2X6",49.248776,-123.016837,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/8/emergency----burnaby-hospital
+Eagle Ridge Hospital,"475 Guildford Way, Port Moody, BC, V3H 3W9",49.285359,-122.824056,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/2/4/emergency---eagle-ridge-hospital
+Peace Arch Hospital,"15521 Russell Avenue, White Rock, BC, V4B 2R4",49.029741,-122.793026,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/6/6/emergency---peace-arch-hospital
+Ridge Meadows Hospital,"11666 Laity Street, Maple Ridge, BC, V2X 7G5",49.215317,-122.630106,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/7/emergency---ridge-meadows-hospital
+Royal Columbian Hospital,"330 East Columbia Street, New Westminster, BC, V3L 3W7",49.226603,-122.892266,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/E/emergency---royal-columbian-hospital
+Edmonds UPCC,"Unit 201, 7315 Edmonds St, Burnaby, BC V3N 1A7",49.218947,-122.951261,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/9/D/urgent-primary-care-centre---edmonds
+Metrotown UPCC,"Unit 102 - 4555 Kingsway, Burnaby, BC V5H 4T8",49.230061,-123.002786,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/7/metrotown-urgent-and-primary-care-centre
+Port Moody UPCC,"3105 Murray St, Port Moody, BC V3H 1X3",49.278416,-122.840097,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/9/urgent-and-primary-care-centre---port-moody
+Surrey Newton UPCC,"6830 King George Blvd, Surrey, BC V3W 4Z9",49.126539,-122.845132,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/0/1/urgent-and-primary-care-centre---surrey-newton
+Surrey Whalley UPCC,"9639 137a St Unit G2, Surrey, BC V3T 0M1",49.177995,-122.842549,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/3/urgent-primary-care-centre---surrey
+Sechelt Hospital,"5544 Sunshine Coast Highway, Sechelt, BC V0N 3A0",49.47538,-123.749473,https://www.vch.ca/en/location-service/emergency-department-sechelt-shishalh-hospital
+qathet General Hospital,"5000 Joyce Avenue, Powell River, BC V8A 5R3",49.850835,-124.518373,https://www.vch.ca/en/location-service/emergency-department-qathet-general-hospital
+North Vancouver Centre Urgent and Primary Care Centre,"221 West Esplanade, Suite 200, 2nd Floor, North Vancouver, BC V7M 3J3",49.31233,-123.083585,https://www.vch.ca/en/location/north-vancouver-urgent-and-primary-care-centre
+Delta Hospital,"5800 Mountain View Blvd, Delta BC, V4K 3V6",49.085866,-123.061768,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/8/7/emergency---delta-hospital
+Abbotsford Regional Hospital,"32900 Marshall Road, Abbotsford, BC, V2S 0C2",49.036955,-122.312559,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/2/emergency---abbotsford-regional-hospital
+Chilliwack General Hospital,"45600 Menholm Road, Chilliwack, BC, V2P 1P7",49.166735,-121.963847,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/3/emergency---chilliwack-general-hospital
+Langley Memorial Hospital,"22051 Fraser Highway, Langley, BC, V4H 4H4",49.094869,-122.612407,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/D/5/emergency---langley-memorial-hospital
+Abbotsford UPCC,"2692 Clearbrook Rd, Abbotsford BC V2Y 4N8",49.050858,-122.337022,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/E/7/urgent-and-primary-care-centre---abbotsford
+Ridge Meadows UPCC,"121-11900 Haney Place, Maple Ridge, BC V2X 8R9",49.21798,-122.599999,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/C/urgent-primary-care-centre---ridge-meadows
+Richmond City Centre Urgent and Primary Care Centre,"Unit 110 - 4671 No. 3 Road, Richmond, BC V6X 2C3",49.182207,-123.136266,https://www.vch.ca/en/location/richmond-city-centre-urgent-and-primary-care-centre
+Surrey Memorial Hospital Adult,"13750 96th Avenue, Surrey, BC, V3V 1Z2",49.176531,-122.841399,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/9/emergency---surrey-memorial-hospital
+Surrey Memorial Hospital Pediatrics,"13750 96th Avenue, Surrey, BC, V3V 1Z2",49.1755,-122.843,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/5/9/emergency---surrey-memorial-hospital
+Richmond East Urgent and Primary Care Centre,"#95 - 10551 Shellbridge Way, Richmond, BC V6X 2W9",49.187095,-123.107718,https://www.vch.ca/en/location/richmond-east-urgent-and-primary-care-centre-upcc
+Chilliwack UPCC,"#104-7955 Evans Road, Chilliwack, BC V2R 5R7",49.146009,-121.98077,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/8/3/Urgent-and-Primary-Care-Centre---Chilliwack
+Langley UPCC,"#202-20434 64th Ave, Langley, BC V2Y 1N4",49.105003,-122.652244,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/F/4/urgent-and-primary-care-centre-langley
+Mission UPCC,"#304–32555 London Avenue, Mission, BC V0M 1H0",49.13022,-122.318125,https://www.fraserhealth.ca/Service-Directory/Service-At-Location/3/D/Urgent-and-Primary-Care-Centre---Mission
+Vancouver City Centre Urgent and Primary Care Centre,"188 Nelson Street, Vancouver, BC, V6B 1A9",49.275794,-123.118055,https://www.vch.ca/en/location/vancouver-city-centre-urgent-primary-care-centre
