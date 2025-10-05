@@ -1,21 +1,36 @@
-
-export interface ChatMessage {
-  role: 'user' | 'model';
-  content: string;
+export enum MessageAuthor {
+  USER = 'user',
+  AI = 'ai',
 }
 
-export interface Recipient {
-  category: string;
-  contact: string;
-  reason: string;
+export interface Message {
+  author: MessageAuthor;
+  text: string;
+  image?: string;
+  quickReplies?: string[];
+}
+
+export interface UserProfile {
+  location: string;
+  gender: string;
 }
 
 export interface ReportData {
-  summary: string;
-  recipients: Recipient[];
+  date: string;
+  location: string;
+  involved: string;
+  description: string;
+  impact: string;
 }
 
-export enum View {
-  Chat = 'CHAT',
-  Report = 'REPORT',
+export interface Recipient {
+  name: string;
+  description: string;
+  email?: string;
+}
+
+export interface Resource {
+  name: string;
+  description: string;
+  contact: string;
 }

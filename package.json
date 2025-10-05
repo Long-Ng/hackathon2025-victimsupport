@@ -1,5 +1,5 @@
 {
-  "name": "safe-harbor-ai-assistant",
+  "name": "copy-of-copy-of-safe-harbor-ai---with-user-profile---long",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,7 +14,7 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.18.8",
     "@types/react": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
