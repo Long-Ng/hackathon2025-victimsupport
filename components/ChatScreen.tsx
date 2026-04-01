@@ -5,7 +5,7 @@ import { MessageAuthor } from '../types';
 // FIX: Removed 'LiveSession' which is not an exported member, and aliased 'Blob' to 'GenAIBlob' to avoid conflict with the native DOM Blob type.
 import type { Chat, Part, LiveServerMessage, Blob as GenAIBlob, GoogleGenAI } from '@google/genai';
 import { Modality } from '@google/genai';
-import { GenerateReportIcon, SendIcon, UserIcon, BotIcon, AttachmentIcon, CameraIcon, AudioIcon, ResourcesIcon, MoreVertIcon, MicrophoneIcon } from './icons';
+import { GenerateReportIcon, SendIcon, UserIcon, BotIcon, AttachmentIcon, CameraIcon, AudioIcon, ResourcesIcon, MoreVertIcon, MicrophoneIcon, DownloadIcon } from './icons';
 import type { AgentType } from '../App';
 import { VOICE_PROMPT } from '../services/agents';
 
@@ -83,69 +83,103 @@ interface ChatScreenProps {
     setError: React.Dispatch<React.SetStateAction<string | null>>;
     isWriting: boolean;
     setIsWriting: React.Dispatch<React.SetStateAction<boolean>>;
+    initialPrompt?: string | null;
+    onInitialPromptSent?: () => void;
+    darkMode?: boolean;
 }
 
-// Helper for formatting standard text (bold, links)
+// Helper for formatting standard text (bold, links, phone numbers)
 const formatRegularText = (text: string): React.ReactNode[] => {
-  if (!text) {
-    return [text];
-  }
+  if (!text) return [text];
 
-  // Regex to split by markdown-like bold (*text*) and links ([text](url))
-  const regex = /(\*.*?\*)|(\[.*?\]\(.*?\))/g;
+  // Split by bold, markdown links, and phone numbers
+  const regex = /(\*.*?\*)|(\[.*?\]\(.*?\))|((?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}|1-\d{3}-\d{3}-\d{4}|\d{3}-\d{4})/g;
   const parts = text.split(regex).filter(part => part);
 
   return parts.map((part, index) => {
-    // Check for bold text: *text*
+    // Bold: *text*
     if (part.startsWith('*') && part.endsWith('*')) {
       return <strong key={index}>{part.slice(1, -1)}</strong>;
     }
-    // Check for links: [text](url)
+    // Markdown link: [text](url)
     if (part.startsWith('[') && part.includes('](') && part.endsWith(')')) {
       const linkTextMatch = part.match(/\[(.*?)\]/);
       const urlMatch = part.match(/\((.*?)\)/);
-
       if (linkTextMatch && urlMatch) {
-        const linkText = linkTextMatch[1];
-        const url = urlMatch[1];
         return (
-          <a
-            key={index}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sky-400 hover:underline"
-          >
-            {linkText}
+          <a key={index} href={urlMatch[1]} target="_blank" rel="noopener noreferrer" className="text-sky-400 hover:underline">
+            {linkTextMatch[1]}
           </a>
         );
       }
     }
-    // Plain text
+    // Phone number — render as a callable button
+    if (/^(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}$|^1-\d{3}-\d{3}-\d{4}$|^\d{3}-\d{4}$/.test(part.trim())) {
+      const digits = part.replace(/\D/g, '');
+      const tel = digits.length === 7 ? `+1604${digits}` : `+${digits.length === 10 ? '1' : ''}${digits}`;
+      return (
+        <a
+          key={index}
+          href={`tel:${tel}`}
+          className="inline-flex items-center gap-1 px-2 py-0.5 mx-0.5 rounded-full text-xs font-semibold bg-sky-700/50 text-sky-300 hover:bg-sky-600/60 border border-sky-600/50 transition-colors"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+          </svg>
+          {part.trim()}
+        </a>
+      );
+    }
     return part;
   });
 };
 
 
-// Helper function to format message text, now handling collapsible sections
+// Helper function to format message text, now handling collapsible sections and map embeds
 const formatMessageText = (text: string): React.ReactNode => {
     if (!text) {
       return text;
     }
-    const collapsibleRegex = /(\[COLLAPSIBLE_START\][\s\S]*?\[COLLAPSIBLE_END\])/g;
-    const parts = text.split(collapsibleRegex).filter(part => part);
+    // Strip any [QUICK_REPLIES: ...] tags that weren't removed during parsing
+    text = text.replace(/\[QUICK_REPLIES:\s*.*?\]/gs, '').trim();
+    const segmentRegex = /(\[MAP_EMBED:[^\]]+\]|\[COLLAPSIBLE_START\][\s\S]*?\[COLLAPSIBLE_END\])/g;
+    const parts = text.split(segmentRegex).filter(part => part);
 
     return parts.map((part, index) => {
-        if (part.startsWith('[COLLAPSIBLE_START]')) {
+        if (part.startsWith('[MAP_EMBED:')) {
+            const query = part.replace('[MAP_EMBED:', '').replace(']', '').trim();
+            const src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+            return (
+                <div key={index} className="my-3 rounded-lg overflow-hidden border border-slate-600">
+                    <iframe
+                        src={src}
+                        width="100%"
+                        height="220"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={`Map: ${query}`}
+                    />
+                    <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block px-3 py-1.5 text-xs text-sky-400 hover:text-sky-300 bg-slate-800 text-center"
+                    >
+                        Open in Google Maps ↗
+                    </a>
+                </div>
+            );
+        } else if (part.startsWith('[COLLAPSIBLE_START]')) {
             const content = part.replace('[COLLAPSIBLE_START]', '').replace('[COLLAPSIBLE_END]', '').trim();
             const lines = content.split('\n');
             const title = lines.shift() || 'View Resources';
             const body = lines.join('\n');
 
             return (
-                <details key={index} className="my-2 p-3 border rounded-lg bg-slate-800/50 border-slate-600">
+                <details key={index} className="chat-collapsible my-2 p-3 border rounded-lg">
                     <summary className="cursor-pointer font-semibold text-sky-400">{title}</summary>
-                    <div className="mt-2 pt-2 border-t border-slate-500 whitespace-pre-wrap">
+                    <div className="mt-2 pt-2 border-t whitespace-pre-wrap chat-collapsible-body">
                         {formatRegularText(body)}
                     </div>
                 </details>
@@ -172,12 +206,53 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     error,
     setError,
     isWriting,
-    setIsWriting
+    setIsWriting,
+    initialPrompt,
+    onInitialPromptSent,
+    darkMode = true,
 }) => {
+  const dm = darkMode;
+
+  // Mode-aware class helpers
+  const msgBubbleAI   = dm ? 'bg-slate-700 text-slate-200 border border-slate-600' : 'bg-white text-gray-900 border border-gray-200';
+  const msgBubbleUser = 'bg-sky-600 text-white';
+  const surfacePanel  = dm ? 'bg-slate-800' : 'bg-white';
+  const surfaceInput  = dm ? 'bg-slate-700/80 border-slate-600/80 text-slate-200 placeholder-slate-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400';
+  const surfaceMenu   = dm ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200';
+  const menuItem      = dm ? 'text-slate-200 hover:bg-slate-600' : 'text-gray-800 hover:bg-gray-100';
+  const iconBtn       = dm ? 'text-slate-300 bg-slate-700 hover:bg-slate-600' : 'text-gray-600 bg-gray-100 hover:bg-gray-200';
+  const avatarAI      = dm ? 'bg-sky-900 text-sky-400' : 'bg-sky-100 text-sky-600';
+  const avatarUser    = dm ? 'bg-slate-600 text-slate-300' : 'bg-gray-200 text-gray-600';
+  const errorBar      = 'bg-red-900/60 text-red-300 border border-red-700/50';
+  const collapsible   = dm ? 'bg-slate-800/50 border-slate-600 text-slate-200' : 'bg-gray-50 border-gray-300 text-gray-900';
+  const collapsibleDivider = dm ? 'border-slate-500' : 'border-gray-300';
+  const quickReplyBtn = dm ? 'bg-slate-700/60 text-slate-300 hover:bg-slate-600/70 border-slate-500/50' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-gray-300';
+
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [quickRepliesExpanded, setQuickRepliesExpanded] = useState(false);
+  const [pinnedResource, setPinnedResource] = useState<{ name: string; phone: string; website?: string } | null>(null);
+
+  const handleDownloadConversation = () => {
+    const now = new Date();
+    const header = `Safe Harbor Conversation\nExported: ${now.toLocaleString()}\n${'─'.repeat(40)}\n\n`;
+    const text = header + messages
+      .map(m => {
+        const speaker = m.author === MessageAuthor.USER ? 'You' : 'Safe Harbor';
+        const ts = m.timestamp ? ` [${m.timestamp}]` : '';
+        return `${speaker}${ts}:\n${m.text}`;
+      })
+      .join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
   const [showCamera, setShowCamera] = useState(false);
   const [showRecorder, setShowRecorder] = useState(false);
   const [showResources, setShowResources] = useState(false);
@@ -259,36 +334,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       
         let responseText: string;
 
-        // The manager agent only runs if it's currently the active agent.
-        // Subsequent turns are handled by the agent the manager delegated to.
-        if (activeAgent === 'manager') {
-            if (!chats.manager) throw new Error("Manager agent not initialized.");
-            const routerResult = await chats.manager.sendMessage({ message: parts });
-            const route = routerResult.text.trim();
+        // Always run the manager first to route every message to the right agent.
+        if (!chats.manager) throw new Error("Manager agent not initialized.");
+        const routerResult = await chats.manager.sendMessage({ message: parts });
+        const route = (routerResult.text ?? '').trim();
 
-            let nextAgent: AgentType = 'offtopic';
-            let nextAgentChat: Chat | null = chats.offtopic;
+        let nextAgent: AgentType = 'info';
+        let nextAgentChat: Chat | null = chats.info;
 
-            if (route.includes('[INFO]')) {
-                nextAgent = 'info';
-                nextAgentChat = chats.info;
-            } else if (route.includes('[LOCATION]')) {
-                nextAgent = 'location';
-                nextAgentChat = chats.location;
-            }
-            
-            setActiveAgent(nextAgent);
-
-            if (!nextAgentChat) throw new Error(`${nextAgent} agent not initialized.`);
-            const agentResponse = await nextAgentChat.sendMessage({ message: parts });
-            responseText = agentResponse.text;
-        } else {
-            // Use the currently active agent for the conversation
-            const currentChat = chats[activeAgent];
-            if (!currentChat) throw new Error(`Active agent "${activeAgent}" not initialized.`);
-            const response = await currentChat.sendMessage({ message: parts });
-            responseText = response.text;
+        if (route.includes('[MAP]') || route.includes('[LOCATION]')) {
+            nextAgent = 'location';
+            nextAgentChat = chats.location ?? chats.info;
+        } else if (route.includes('[OFFTOPIC]')) {
+            nextAgent = 'offtopic';
+            nextAgentChat = chats.offtopic ?? chats.info;
         }
+        // [INFO], [DOCS], and anything unrecognized all go to info
+
+        setActiveAgent(nextAgent);
+
+        if (!nextAgentChat) throw new Error(`No agent available — all chat refs are null. Check API key and initialization.`);
+        const agentResponse = await nextAgentChat.sendMessage({ message: parts });
+        responseText = agentResponse.text ?? '';
       
         // Parse for quick replies
         const quickReplyRegex = /\[QUICK_REPLIES:\s*(.*?)\]/s;
@@ -297,31 +364,52 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         let cleanText = responseText;
 
         if (match && match[1]) {
+            cleanText = responseText.replace(quickReplyRegex, '').trim();
             try {
-                // The match is a string that looks like an array, so we parse it
                 quickReplies = JSON.parse(`[${match[1]}]`);
-                cleanText = responseText.replace(quickReplyRegex, '').trim();
             } catch (e) {
                 console.error("Failed to parse quick replies:", e);
-                // Leave text as is if parsing fails
             }
         }
+
+        // Parse for pinned resource
+        const pinRegex = /\[PIN_RESOURCE:\s*({.*?})\]/s;
+        const pinMatch = cleanText.match(pinRegex);
+        if (pinMatch) {
+            try {
+                const pinData = JSON.parse(pinMatch[1]);
+                if (pinData.name && pinData.phone) setPinnedResource(pinData);
+            } catch {}
+            cleanText = cleanText.replace(pinRegex, '').trim();
+        }
         
-        const aiMessage: Message = { author: MessageAuthor.AI, text: cleanText, quickReplies };
+        const aiMessage: Message = { author: MessageAuthor.AI, text: cleanText, quickReplies, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
         setMessages(prev => [...prev, aiMessage]);
-    } catch (e) {
-        console.error(e);
-        setError("I'm sorry, I couldn't process that. Please try again.");
+    } catch (e: any) {
+        console.error("sendMessageToAI error:", e);
+        setError(`Error: ${e?.message ?? String(e)}`);
     } finally {
         setIsThinking(false);
         setIsWriting(false);
     }
   }, [activeAgent, chats, setActiveAgent, setError, setMessages]);
 
+  // Auto-send a prompt that was selected on the disclaimer screen
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && chats.manager && !autoSentRef.current) {
+      autoSentRef.current = true;
+      const userMessage: Message = { author: MessageAuthor.USER, text: initialPrompt, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+      setMessages(prev => [...prev, userMessage]);
+      sendMessageToAI(userMessage);
+      onInitialPromptSent?.();
+    }
+  }, [initialPrompt, chats.manager]);
+
 
   const handleSend = async () => {
     if ((!input.trim() && !attachedImage) || isThinking) return;
-    const userMessage: Message = { author: MessageAuthor.USER, text: input, image: attachedImage };
+    const userMessage: Message = { author: MessageAuthor.USER, text: input, image: attachedImage, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setAttachedImage(null);
@@ -330,7 +418,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   
   const handleQuickReplyClick = async (replyText: string) => {
       if (isThinking) return;
-      const userMessage: Message = { author: MessageAuthor.USER, text: replyText };
+      const userMessage: Message = { author: MessageAuthor.USER, text: replyText, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
       setMessages(prev => [...prev, userMessage]);
       await sendMessageToAI(userMessage);
   };
@@ -443,7 +531,7 @@ ${VOICE_PROMPT}
                     setVoiceConnectionStatus('error');
                     stopVoiceChat();
                 },
-                onclose: (e: CloseEvent) => {
+                onclose: (_e: CloseEvent) => {
                     stopVoiceChat();
                 },
             },
@@ -643,7 +731,30 @@ ${VOICE_PROMPT}
   const quickReplies = lastMessage?.author === MessageAuthor.AI && lastMessage.quickReplies && lastMessage.quickReplies.length > 0 ? lastMessage.quickReplies : null;
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto bg-slate-900/50 backdrop-blur-sm">
+    <div
+      data-theme={dm ? 'dark' : 'light'}
+      className={`flex flex-col h-full max-w-3xl mx-auto backdrop-blur-sm w-full ${dm ? 'bg-slate-900/60' : 'bg-white/80'}`}
+    >
+      <style>{`
+        [data-theme="light"] .chat-collapsible {
+          background: rgba(249,250,251,1);
+          border-color: #d1d5db;
+          color: #111827;
+        }
+        [data-theme="light"] .chat-collapsible-body {
+          border-color: #d1d5db;
+          color: #111827;
+        }
+        [data-theme="dark"] .chat-collapsible {
+          background: rgba(30,41,59,0.5);
+          border-color: #475569;
+          color: #e2e8f0;
+        }
+        [data-theme="dark"] .chat-collapsible-body {
+          border-color: #64748b;
+          color: #e2e8f0;
+        }
+      `}</style>
       {showCamera && <CameraModal />}
       {showRecorder && <RecorderModal />}
       {showResources && <ResourcesModal />}
@@ -652,18 +763,18 @@ ${VOICE_PROMPT}
         {messages.map((msg, index) => (
           <div key={index} className={`flex items-start gap-3 ${msg.author === MessageAuthor.USER ? 'justify-end' : 'justify-start'}`}>
             {msg.author === MessageAuthor.AI && (
-              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-sky-900 rounded-full text-sky-400">
+              <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${avatarAI}`}>
                 <BotIcon />
               </div>
             )}
-            <div className={`max-w-xl px-4 py-3 rounded-2xl ${msg.author === MessageAuthor.USER 
-                ? 'bg-sky-600 text-white rounded-br-none' 
-                : 'bg-slate-700 text-slate-200 border border-slate-600 rounded-bl-none'}`}>
+            <div className={`max-w-xl px-4 py-3 rounded-2xl ${msg.author === MessageAuthor.USER
+                ? `${msgBubbleUser} rounded-br-none`
+                : `${msgBubbleAI} rounded-bl-none`}`}>
               {msg.image && <img src={msg.image} alt="User upload" className="object-cover w-full mb-2 rounded-lg max-h-64" />}
               {msg.text && <div className="whitespace-pre-wrap">{formatMessageText(msg.text)}</div>}
             </div>
              {msg.author === MessageAuthor.USER && (
-                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-slate-600 rounded-full text-slate-300">
+                <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${avatarUser}`}>
                     <UserIcon />
                 </div>
             )}
@@ -674,55 +785,111 @@ ${VOICE_PROMPT}
                 <div className={`max-w-xl px-4 py-3 rounded-2xl bg-sky-600 text-white rounded-br-none`}>
                     <div className="whitespace-pre-wrap">{streamingInput}</div>
                 </div>
-                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-slate-600 rounded-full text-slate-300">
+                <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${avatarUser}`}>
                     <UserIcon />
                 </div>
             </div>
         )}
         {streamingOutput && (
             <div className="flex items-start gap-3 justify-start">
-                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-sky-900 rounded-full text-sky-400">
+                <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${avatarAI}`}>
                     <BotIcon />
                 </div>
-                <div className={`max-w-xl px-4 py-3 rounded-2xl bg-slate-700 text-slate-200 border border-slate-600 rounded-bl-none`}>
+                <div className={`max-w-xl px-4 py-3 rounded-2xl rounded-bl-none ${msgBubbleAI}`}>
                     <div className="whitespace-pre-wrap">{streamingOutput}</div>
                 </div>
             </div>
         )}
                 {(isThinking || isWriting) && (
                     <div className="flex items-start gap-3 justify-start">
-                        <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-sky-900 rounded-full text-sky-400">
+                        <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${avatarAI}`}>
                                 <BotIcon />
                         </div>
-                        <div className="flex items-center space-x-1 max-w-xl px-4 py-3 rounded-2xl bg-slate-700 border border-slate-600 rounded-bl-none">
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:-0.3s]"></span>
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:-0.15s]"></span>
-                            <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></span>
+                        <div className={`flex items-center space-x-1 max-w-xl px-4 py-3 rounded-2xl rounded-bl-none ${msgBubbleAI}`}>
+                            <span className={`w-2 h-2 rounded-full animate-pulse [animation-delay:-0.3s] ${dm ? 'bg-slate-400' : 'bg-gray-400'}`}></span>
+                            <span className={`w-2 h-2 rounded-full animate-pulse [animation-delay:-0.15s] ${dm ? 'bg-slate-400' : 'bg-gray-400'}`}></span>
+                            <span className={`w-2 h-2 rounded-full animate-pulse ${dm ? 'bg-slate-400' : 'bg-gray-400'}`}></span>
                         </div>
                     </div>
                 )}
         <div ref={messagesEndRef} />
       </div>
 
+      {pinnedResource && (
+        <div className="mx-4 mb-2 px-4 py-3 rounded-xl bg-sky-900/60 border border-sky-600/60 backdrop-blur-sm flex items-start gap-3 shadow-lg">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-sky-400">
+              <path d="M12 2a7 7 0 017 7c0 5.25-7 13-7 13S5 14.25 5 9a7 7 0 017-7z"/>
+              <circle cx="12" cy="9" r="2.5" fill="white"/>
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-sky-300 uppercase tracking-wide mb-0.5">Top Resource</p>
+            <p className="text-sm font-medium text-white truncate">{pinnedResource.name}</p>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              <a
+                href={`tel:${pinnedResource.phone.replace(/\D/g, '')}`}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-700/60 text-sky-200 hover:bg-sky-600/70 border border-sky-500/50 transition-colors"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+                </svg>
+                {pinnedResource.phone}
+              </a>
+              {pinnedResource.website && (
+                <a
+                  href={pinnedResource.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700/60 text-slate-300 hover:bg-slate-600/70 border border-slate-500/50 transition-colors"
+                >
+                  Website ↗
+                </a>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setPinnedResource(null)}
+            className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Dismiss"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
       {error && (
-        <div className="px-4 py-2 mx-4 mb-2 text-sm text-center text-red-300 bg-red-900/30 border border-red-800/50 rounded-md">
+        <div className={`px-4 py-2 mx-4 mb-2 text-sm text-center rounded-md ${errorBar}`}>
           {error}
         </div>
       )}
 
-      <div className="p-4 bg-slate-800 border-t border-slate-700">
+      <div className={`px-4 pt-3 pb-4 border-t backdrop-blur-sm ${dm ? 'bg-slate-800/90 border-slate-700/70' : 'bg-white/90 border-gray-200'}`}>
          {quickReplies && !streamingInput && !streamingOutput && (
-            <div className="flex flex-wrap items-center gap-2 pb-3 mb-3 border-b border-slate-700">
-                {quickReplies.map((reply, index) => (
-                    <button
-                        key={index}
-                        onClick={() => handleQuickReplyClick(reply)}
-                        disabled={isThinking}
-                        className="px-4 py-2 text-sm font-medium transition-colors duration-200 border rounded-full text-sky-300 bg-sky-900/50 border-sky-800 hover:bg-sky-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {reply}
-                    </button>
-                ))}
+            <div className={`pb-3 mb-3 border-b ${dm ? 'border-slate-700' : 'border-gray-200'}`}>
+                <button
+                    onClick={() => setQuickRepliesExpanded(prev => !prev)}
+                    className={`flex items-center gap-1 mb-2 text-xs font-medium sm:hidden ${dm ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-800'}`}
+                >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: quickRepliesExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                        <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    {quickRepliesExpanded ? 'Hide suggestions' : 'Show suggestions'}
+                </button>
+                <div className={`flex flex-wrap items-center gap-2 ${quickRepliesExpanded ? 'flex' : 'hidden'} sm:flex`}>
+                    {quickReplies.map((reply, index) => (
+                        <button
+                            key={index}
+                            onClick={() => handleQuickReplyClick(reply)}
+                            disabled={isThinking}
+                            className={`px-4 py-2 text-sm font-medium transition-colors duration-200 border rounded-full disabled:opacity-50 disabled:cursor-not-allowed ${dm ? 'text-sky-300 bg-sky-900/50 border-sky-800 hover:bg-sky-900' : 'text-sky-700 bg-sky-50 border-sky-200 hover:bg-sky-100'}`}
+                        >
+                            {reply}
+                        </button>
+                    ))}
+                </div>
             </div>
         )}
         {attachedImage && (
@@ -736,7 +903,7 @@ ${VOICE_PROMPT}
                 <button 
                 onClick={() => setShowExportMenu(prev => !prev)}
                 disabled={isGeneratingReport || isGeneratingResources || messages.length < 2}
-                className="flex items-center justify-center flex-shrink-0 w-12 h-12 text-slate-300 bg-slate-700 rounded-full hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-full disabled:opacity-50 disabled:cursor-not-allowed ${iconBtn}`}
                 title="Actions Menu"
                 >
                 {(isGeneratingReport || isGeneratingResources) ? (
@@ -746,9 +913,10 @@ ${VOICE_PROMPT}
                 )}
                 </button>
                 {showExportMenu && (
-                    <div ref={exportMenuRef} className="absolute bottom-full left-0 z-10 w-64 mb-2 overflow-hidden bg-slate-700 border rounded-lg shadow-lg border-slate-600">
-                        <button onClick={() => { setShowExportMenu(false); onGenerateReport(); }} className="flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-slate-200 hover:bg-slate-600"><GenerateReportIcon /> File an Incident Report</button>
-                        <button onClick={() => { setShowExportMenu(false); onGenerateResources(); }} className="flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left text-slate-200 hover:bg-slate-600"><ResourcesIcon /> Compile Resources</button>
+                    <div ref={exportMenuRef} className={`absolute bottom-full left-0 z-10 w-64 mb-2 overflow-hidden border rounded-lg shadow-lg ${surfaceMenu}`}>
+                        <button onClick={() => { setShowExportMenu(false); onGenerateReport(); }} className={`flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left ${menuItem}`}><GenerateReportIcon /> File an Incident Report</button>
+                        <button onClick={() => { setShowExportMenu(false); onGenerateResources(); }} className={`flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left ${menuItem}`}><ResourcesIcon /> Compile Resources</button>
+                        <button onClick={() => { setShowExportMenu(false); handleDownloadConversation(); }} className={`flex items-center w-full gap-3 px-4 py-3 text-sm font-medium text-left ${menuItem}`}><DownloadIcon /> Save Conversation</button>
                     </div>
                 )}
             </div>
@@ -759,10 +927,10 @@ ${VOICE_PROMPT}
                     <AttachmentIcon />
                 </button>
                 {showActionMenu && (
-                     <div ref={actionMenuRef} className="absolute bottom-full left-0 mb-2 w-48 bg-slate-700 border border-slate-600 rounded-lg shadow-lg overflow-hidden">
-                        <button onClick={() => { setShowActionMenu(false); setShowResources(true); }} className="flex items-center w-full gap-3 px-4 py-2 text-left text-slate-200 hover:bg-slate-600"><ResourcesIcon /> Resources</button>
-                        <button onClick={openCamera} className="flex items-center w-full gap-3 px-4 py-2 text-left text-slate-200 hover:bg-slate-600"><CameraIcon /> Take Photo</button>
-                        <button onClick={() => { setShowActionMenu(false); setShowRecorder(true); }} className="flex items-center w-full gap-3 px-4 py-2 text-left text-slate-200 hover:bg-slate-600"><AudioIcon /> Record Audio</button>
+                     <div ref={actionMenuRef} className={`absolute bottom-full left-0 mb-2 w-48 border rounded-lg shadow-lg overflow-hidden ${surfaceMenu}`}>
+                        <button onClick={() => { setShowActionMenu(false); setShowResources(true); }} className={`flex items-center w-full gap-3 px-4 py-2 text-left ${menuItem}`}><ResourcesIcon /> Resources</button>
+                        <button onClick={openCamera} className={`flex items-center w-full gap-3 px-4 py-2 text-left ${menuItem}`}><CameraIcon /> Take Photo</button>
+                        <button onClick={() => { setShowActionMenu(false); setShowRecorder(true); }} className={`flex items-center w-full gap-3 px-4 py-2 text-left ${menuItem}`}><AudioIcon /> Record Audio</button>
                     </div>
                 )}
             </div>
@@ -776,9 +944,9 @@ ${VOICE_PROMPT}
                   handleSend();
                 }
               }}
-              placeholder="Type your message here..."
+              placeholder="Message Safe Harbor..."
               rows={1}
-              className="w-full px-12 py-3 pr-28 text-base text-slate-200 transition-colors duration-200 border rounded-full resize-none bg-slate-700 border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className={`w-full px-12 py-3 pr-24 text-sm transition-colors duration-150 border rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-sky-500/70 focus:border-sky-500/50 ${surfaceInput}`}
             />
             <div className="absolute inset-y-0 right-0 flex items-center pr-1">
                 <button
@@ -803,19 +971,7 @@ ${VOICE_PROMPT}
                                 <button
                                     onClick={handleSend}
                                     disabled={(!input.trim() && !attachedImage) || isThinking}
-                                    className="flex items-center justify-center w-12 h-12 text-white transition-colors duration-200 rounded-full bg-sky-600 border border-slate-600 hover:bg-sky-700 disabled:bg-sky-800 disabled:cursor-not-allowed"
-                                    style={{
-                                        boxSizing: 'border-box',
-                                        marginRight: '0px',
-                                        marginBottom: '4px',
-                                        background: 'inherit',
-                                        border: '1.5px solid #334155',
-                                        color: '#e2e8f0',
-                                        fontSize: '1rem',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: '#0ea5e9', // matches input bar
-                                    }}
+                                    className="flex items-center justify-center w-10 h-10 text-white transition-colors duration-150 rounded-full bg-sky-500 hover:bg-sky-400 disabled:bg-sky-900 disabled:text-sky-700 disabled:cursor-not-allowed shadow-sm"
                                 >
                                     <SendIcon />
                                 </button>
